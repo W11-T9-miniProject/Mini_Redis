@@ -80,7 +80,9 @@ async function fetchSuggestions() {
     const response = await fetch('/api/suggest?' + new URLSearchParams({q:query}), {signal:suggestionController.signal});
     if (!response.ok) throw new Error('suggestions unavailable');
     const data = await response.json();
-    if (version !== suggestionVersion || document.activeElement !== input || composing) return;
+    // IME 조합이 끝나지 않아도 화면에 보이는 '성'으로 추천을 보여준다.
+    // 조합 여부는 Enter/방향키 처리에만 사용하고 응답 표시를 막지 않는다.
+    if (version !== suggestionVersion || document.activeElement !== input || query !== input.value.trim()) return;
     let values = data.suggestions;
     if (!query && recent.length) {
       // 같은 글자여도 기록과 추천은 의미가 다르다. 추천 그룹을 기록 때문에 숨기지 않는다.
@@ -88,7 +90,7 @@ async function fetchSuggestions() {
     }
     renderSuggestions(values, query);
   } catch (error) {
-    if (error.name !== 'AbortError' && version === suggestionVersion && document.activeElement === input) {
+    if (error.name !== 'AbortError' && version === suggestionVersion && document.activeElement === input && query === input.value.trim()) {
       renderSuggestions([], query);
       list.innerHTML = '<li class="suggest-empty" role="presentation">추천어를 불러오지 못했어요. Enter를 눌러 직접 검색할 수 있어요.</li>';
     }
@@ -101,7 +103,9 @@ function scheduleSuggestions() {
   ++suggestionVersion;
   suggestionController?.abort();
   closeSuggestions();
-  if (!composing) suggestTimer = setTimeout(fetchSuggestions, 90);
+  // 한글은 다음 글자/공백 전까지 composing=true일 수 있다.
+  // compositionend를 기다리지 말고 현재 입력값이 90ms 유지되면 조회한다.
+  suggestTimer = setTimeout(fetchSuggestions, 90);
 }
 function selectSuggestion(index) {
   const item = suggestions[index];
@@ -201,6 +205,9 @@ function submitSearch(query) {
   document.title = state.query ? `${state.query} — 틈` : '틈 — 일상과 발견 사이';
   loadPlaces(true);
 }
+function startCollectionQuery(query) {
+  state.saved=false;state.category='all';state.district='all';input.value=query;submitSearch(query);
+}
 function resetAll() {
   Object.assign(state, {query:'',category:'all',district:'all',sort:'recommended',saved:false,visible:6});
   input.value = '';
@@ -234,6 +241,7 @@ $('#search-form').addEventListener('submit', event => {event.preventDefault(); i
 input.addEventListener('input', scheduleSuggestions);
 input.addEventListener('focus', fetchSuggestions);
 input.addEventListener('compositionstart', () => { composing=true; clearTimeout(suggestTimer); ++suggestionVersion; suggestionController?.abort(); closeSuggestions(); });
+input.addEventListener('compositionupdate', scheduleSuggestions);
 input.addEventListener('compositionend', () => { composing=false; scheduleSuggestions(); });
 input.addEventListener('keydown', event => {
   if (composing || event.isComposing || event.keyCode === 229) return;
@@ -252,7 +260,7 @@ $('#clear-input').addEventListener('click', () => {input.value='';$('#clear-inpu
 $('#category-tabs').addEventListener('click', event => {const button=event.target.closest('[data-category]');if(button){state.category=button.dataset.category;state.visible=6;loadPlaces();}});
 $('#district-filter').addEventListener('change', event => {state.district=event.target.value;state.visible=6;loadPlaces();});
 $('#sort-filter').addEventListener('change', event => {state.sort=event.target.value;loadPlaces();});
-document.querySelectorAll('[data-query]').forEach(button => button.addEventListener('click', () => {state.saved=false;state.category='all';state.district='all';input.value=button.dataset.query;submitSearch(button.dataset.query);}));
+document.querySelectorAll('[data-query]').forEach(button => button.addEventListener('click', () => startCollectionQuery(button.dataset.query)));
 grid.addEventListener('click', event => {const save=event.target.closest('[data-save]');const open=event.target.closest('[data-open]');if(save)toggleSave(Number(save.dataset.save));else if(open)openPlace(Number(open.dataset.open));});
 $('#load-more').addEventListener('click', () => {state.visible+=6;renderPlaces();});
 $('#reset-filters').addEventListener('click', resetAll);
@@ -268,6 +276,16 @@ async function init() {
     const response = await fetch('/api/config');
     if (!response.ok) throw new Error('config unavailable');
     const config = await response.json();
+    if (Array.isArray(config.starters)) {
+      const chips = $('#starter-chips');
+      chips.replaceChildren();
+      for (const query of config.starters.slice(0,4)) {
+        const button = document.createElement('button');
+        button.type='button';button.textContent=query+' ↗';
+        button.addEventListener('click',()=>startCollectionQuery(query));
+        chips.append(button);
+      }
+    }
     for (const district of config.districts) {
       const option = document.createElement('option'); option.value=district; option.textContent=district; $('#district-filter').append(option);
     }

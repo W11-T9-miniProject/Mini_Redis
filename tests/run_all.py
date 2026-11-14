@@ -7,6 +7,7 @@ import argparse
 import os
 from pathlib import Path
 import socket
+import shutil
 import subprocess
 import sys
 import time
@@ -25,6 +26,11 @@ def main():
     subprocess.run([str(args.unit.resolve()), "all"], cwd=ROOT, check=True)
     subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"],
                    cwd=ROOT, check=True)
+    node = shutil.which("node")
+    if node:
+        subprocess.run([node, "--test", "tests/test_autocomplete.cjs"], cwd=ROOT, check=True)
+    else:
+        print("SKIP: Node.js가 없어 한글 입력 이벤트 테스트는 실행하지 않았습니다.", flush=True)
     with socket.socket() as reservation:
         reservation.bind(("127.0.0.1", 0))
         port = reservation.getsockname()[1]

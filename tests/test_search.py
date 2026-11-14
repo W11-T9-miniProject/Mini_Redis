@@ -21,6 +21,8 @@ class Cache:
         self.lock = threading.Lock()
         self.unavailable = False
         self.set_fails = False
+        self.delete_fails = False
+        self.deletes = []
 
     def get(self, key):
         if self.unavailable:
@@ -35,6 +37,13 @@ class Cache:
             raise AssertionError("unexpected TTL")
         with self.lock:
             self.values[key] = value
+
+    def delete(self, key):
+        if self.unavailable or self.delete_fails:
+            raise OSError("delete failed")
+        with self.lock:
+            self.deletes.append(key)
+            return int(self.values.pop(key, None) is not None)
 
 
 class SearchTests(unittest.TestCase):

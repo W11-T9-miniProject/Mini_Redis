@@ -1,5 +1,32 @@
 # 검증 기록
 
+## 2026-11-14 요구사항 전체 재점검 — 아직 전체 통과 아님
+
+tests/run_all.py를 두 번 실행했습니다.
+
+| 검사 | 첫 실행 | 재실행 |
+|---|---|---|
+| C 코어 단위 테스트 | 18/18 통과 | 18/18 통과 |
+| Python/HTTP 관리 테스트 | 34/34 통과 | 34/34 통과 |
+| 한글 입력 이벤트 모형 테스트 | 6/6 통과 | 6/6 통과 |
+| 실제 C/TCP/HTTP 통합 테스트 | 18/19 통과, 1 오류 | 18/19 통과, 1 오류 |
+
+첫 오류는 test_server.test_expiration의 socket.create_connection에서 WinError 10014,
+재실행 오류는 test_search_cache.test_expired_result_is_not_served_and_is_rebuilt의
+시험용 HTTP 서버 listen에서 WinError 10014였습니다. 둘 다 만료 판정 assertion 전입니다.
+첫 실패 테스트의 단독 재실행은 통과했지만, 전체 실행은 여전히 안정적으로 통과하지 않았습니다.
+환경/프로그램/테스트 중 어느 쪽이 원인인지는 확정하지 못했습니다.
+이전의 개별 통과 기록을 근거로 현재 전체 검사가 통과했다고 보고하지 않습니다.
+
+원본 로그: build/requirements-audit-tests.log, build/requirements-audit-recheck.log.
+테스트에서 생성한 C 서버는 종료했고 사용자가 사용하는 6379 서버는 종료하지 않았습니다.
+
+필수 기능은 구현돼 있으나 전체 통신 검증의 안정성을 해결해야 합니다.
+원격 PC 접속, 실제 브라우저 IME/시각 검수, 메모리 sanitizer는 여전히 미검증이며,
+선택 과제인 C 저장소 영속성/복구도 미구현입니다.
+
+## 이전 기능별 검증 기록
+
 2026-11-13, Windows / Visual Studio MSVC 14.41, /std:c11 /utf-8 /W4 /WX.
 
 ## 확인한 항목

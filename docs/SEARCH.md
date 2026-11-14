@@ -13,7 +13,8 @@ Python 명령으로 실행하려면 examples/search_app.py --port 8090을 사용
 ## 화면
 
 - 장소/동네/분위기를 입력하는 자동완성 검색.
-- 한글 조합 중에는 불완전한 요청을 보내지 않고 compositionend 이후 요청.
+- 한글 조합 중에도 현재 표시된 값이 90ms 유지되면 조회. 다음 글자/공백을 기다리지 않음.
+- 조합 여부는 Enter/방향키의 IME 동작 보호에만 사용하고 추천 응답 표시를 막지 않음.
 - 성수동카페/성수카페/성수 카페의 띄어쓰기·동네 별칭을 동일하게 처리.
 - 빈 입력의 최근 검색/추천은 별도 그룹, 글자 입력 후에는 서버 추천만 표시.
 - 90ms debounce, AbortController와 요청 버전으로 이전 검색 결과 역전 방지.
@@ -60,6 +61,10 @@ LIKE의 %와 _는 escape하고 SQL 파라미터를 사용합니다.
 | /api/suggest?q= | 검색 후보, X-Cache 응답 헤더 |
 | /api/search?q=&category=&district=&saved=&sort= | 장소 검색/필터 |
 | /api/stats | 개발자용 캐시/DB 조회 통계 |
+| /admin | 추천 검색어 관리 화면 |
+| GET /api/admin/session | 로컬 관리 요청 토큰 |
+| GET/POST /api/admin/phrases | 추천어 목록/추가 |
+| PUT/DELETE /api/admin/phrases/{id} | 추천어 수정/삭제 + 자동 DEL |
 
 정적 파일은 웹 루트 밖 경로를 거부합니다. HTTP/1.1에서는 표준 chunked framing을 사용합니다.
 이 환경에서 고정 길이 정적 응답의 뒷부분이 누락되는 현상을 관찰했고, chunked 전송에서는
@@ -96,6 +101,19 @@ tests/test_search.py 16개 테스트:
 브라우저 자동 접근 호스트가 사용할 수 없었고, 네이티브 미리보기 승인도 만료돼
 실제 화면의 시각적 검수와 브라우저 클릭/IME 상호작용 검증은 완료하지 못했습니다.
 JS 문법 검사와 API/정적 파일 테스트를 수행했습니다.
+
+이후 사용자가 보고한 '성 입력 후 다음 키를 눌러야 추천이 뜨는 문제'를 수정했습니다.
+tests/test_autocomplete.cjs는 실제 app.js를 DOM 모형에서 실행해 compositionend 없는
+한 글자 추천, compositionupdate, 오래된 응답 무시, 중복 debounce, Escape, 포커스 이탈을
+검사합니다. Node.js가 있으면 node --test tests/test_autocomplete.cjs로 6개를 실행할 수 있습니다.
+이 검사는 실제 Windows IME를 조작한 브라우저 테스트와는 구분합니다.
+
+tests/integration/test_search_cache.py는 실행 중인 C 서버에 연결해 동시 HTTP 8요청의
+DB 조회 합치기, 만료 후 재계산, 외부 DEL 후 변경한 DB 후보 반영을 검사합니다.
+관리 API CRUD가 자동으로 실제 DEL을 발행하는 경로도 검사합니다.
+시험용 DB/캐시 namespace를 사용하며 일반 웹 데이터는 변경하지 않습니다.
+요구사항별 구현/한계는 [중점 항목 검증표](REQUIREMENTS.md)를 참고하세요.
+추천어 편집은 별도 [관리 화면](ADMIN.md)에서 제공하며 일반 검색 화면에 기술 설명을 추가하지 않았습니다.
 
 bench/search_bench.py는 화면과 분리된 측정 도구입니다.
 같은 데이터를 cache on/off로 각각 실행하고 RPS/p50/p95/DB 조회를 비교하세요.

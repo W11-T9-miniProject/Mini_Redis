@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>정글 주간 식단 · Mini Redis</title><link rel="stylesheet" href="/static/style.css"><script src="/static/menu.js" defer></script></head>
+<body class="menu-view">
+<header class="topbar"><a href="/" class="brand"><span class="brand-mark">J</span><span>JUNGLE</span></a><nav><a href="/">자리 선택</a><a href="/admin">관리자</a></nav></header>
+<main class="menu-page">
+<section class="intro"><div><p class="eyebrow">JUNGLE CAFETERIA</p><h1>정글 주간 식단</h1></div><div id="menu-notice" role="status" aria-live="polite" aria-atomic="true" class="menu-feedback"></div><button id="menu-refresh">식단 다시 조회</button></section>
+<section class="menu-overview" aria-label="식단과 조회 결과">
+ <article class="panel menu-status"><span id="cache-badge" class="pill">조회 전</span><h2 id="menu-title">식단표를 불러오는 중입니다.</h2><p id="menu-fetched" class="subtle"></p></article>
+ <article class="panel"><h2>이번 조회 시간</h2><p class="menu-metric"><strong id="menu-elapsed">—</strong><span>ms</span></p><p class="subtle">서버 내부 처리 · 이미지 다운로드 제외</p></article>
+ <article class="panel"><h2>캐시 남은 시간</h2><p id="cache-remaining" class="menu-metric menu-remaining">—</p><p id="menu-deadline" class="subtle">공통 캐시 · 유효기간 1시간</p></article>
+</section>
+{% if admin %}
+<section class="panel menu-controls" aria-label="관리자 캐시 시연"><div class="menu-actions"><button id="menu-clear" class="danger">식단 캐시 비우기</button><button id="menu-benchmark">사용 전후 5회씩 비교</button></div><div id="benchmark-results" aria-live="polite"></div></section>
+{% endif %}
+<section class="panel menu-image-panel"><a id="menu-image-link" target="_blank" rel="noopener" hidden><img id="menu-image" alt="정글 주간 식단표. 누르면 원본 크기로 열립니다."></a><a id="menu-source" href="https://pf.kakao.com/_xhzNjn/contents/posts/114707701?post_only=true" target="_blank" rel="noopener">카카오 식당 채널 원본 보기 ↗</a></section>
+</main><footer>JUNGLE · Mini Redis 캐시 시연</footer>
+</body></html>

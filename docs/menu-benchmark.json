@@ -1,0 +1,20 @@
+{
+  "cached": {
+    "max_ms": 0.502,
+    "mean_ms": 0.418,
+    "median_ms": 0.418,
+    "min_ms": 0.354,
+    "samples": 5
+  },
+  "measurement": "웹 서버 내부 처리 시간; 이미지 다운로드·브라우저 왕복 제외; 캐시 예열 저장 제외",
+  "origin_requests": 5,
+  "same_payload": true,
+  "samples_per_mode": 5,
+  "uncached": {
+    "max_ms": 42.45,
+    "mean_ms": 38.471,
+    "median_ms": 39.651,
+    "min_ms": 32.634,
+    "samples": 5
+  }
+}

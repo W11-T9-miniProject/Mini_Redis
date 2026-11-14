@@ -1,0 +1,19 @@
+# Generated files and local runtime data
+.DS_Store
+.venv/
+__pycache__/
+.pytest_cache/
+node_modules/
+*.dSYM/
+*.pyc
+*.rdb
+*.pcap
+*.pcapng
+.env
+.env.*
+c-mini-redis/mini-redis
+c-mini-redis/mini-redis-asan
+c-mini-redis/manual-data/
+c-mini-redis/data/
+c-mini-redis/reports/benchmark-rdb/
+product-demo/.redis-data/

@@ -1,0 +1,8 @@
+{
+  "name": "mini-redis",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A tiny in-memory Redis-compatible RESP server",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}

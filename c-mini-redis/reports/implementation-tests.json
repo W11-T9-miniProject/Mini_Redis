@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-11-13T07:33:37.497457+00:00",
+  "suite": "pytest tests/",
+  "asan_ubsan": {
+    "passed": 67,
+    "seconds": 9.0,
+    "ASAN_OPTIONS": "detect_leaks=0",
+    "UBSAN_OPTIONS": "halt_on_error=1"
+  },
+  "rdb": "Redis redis-check-rdb: Checksum OK; RDB looks OK",
+  "notes": "Apple ASAN leak detection unsupported; no leak-free claim. Independent review adds regression coverage.",
+  "normal": {
+    "passed": 67,
+    "seconds": 8.3
+  }
+}

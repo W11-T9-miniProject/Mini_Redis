@@ -1,0 +1,8 @@
+[offset 0] Checking RDB file reports/benchmark-rdb/dump.rdb
+[offset 11] Selecting DB ID 0
+[offset 11220] Checksum OK
+[offset 11220] \o/ RDB looks OK! \o/
+[info] 50 keys read
+[info] 50 expires
+[info] 0 already expired
+[info] 0 subexpires

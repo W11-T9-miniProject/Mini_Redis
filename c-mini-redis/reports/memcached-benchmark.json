@@ -1,0 +1,17 @@
+{
+  "protocol": "memcached",
+  "host": "127.0.0.1",
+  "port": 11229,
+  "connections": 50,
+  "pipeline": 16,
+  "request_bytes": 256,
+  "value_bytes": 191,
+  "requests": 1000000,
+  "success": 1000000,
+  "errors": 0,
+  "elapsed_seconds": 1.2208745000098133,
+  "requests_per_second": 819085.008321463,
+  "platform": "macOS-26.3-arm64-arm-64bit-Mach-O",
+  "python": "3.15.0b3",
+  "threshold": "unspecified"
+}

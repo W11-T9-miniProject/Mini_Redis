@@ -1,0 +1,2 @@
+# Preserve raw benchmark output (including terminal progress/spacing).
+c-mini-redis/reports/*.txt -text -whitespace

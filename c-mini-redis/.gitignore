@@ -1,0 +1,6 @@
+.venv/
+mini-redis
+mini-redis-asan
+__pycache__/
+.pytest_cache/
+data/

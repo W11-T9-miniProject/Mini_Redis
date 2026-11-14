@@ -1,0 +1,40 @@
+flowchart TD
+    C["외부 클라이언트 · RESP2 · pipeline 16"]
+    subgraph S["미니 Redis · 독립 C 서버"]
+        subgraph MAIN["메인 스레드 · 명령 순차 실행"]
+            E["AE 이벤트 루프 · poll\n소켓·타이머 콜백"]
+            N["네트워크 처리\nTCP 연결 · 증분 RESP 파싱 · 출력 버퍼"]
+            M["명령 디스패처\n인자 검증 · 타입 검증"]
+            L["제한 Lua EVAL\nKEYS 검증 · 시간/명령/메모리 제한"]
+            D["메모리 키 공간 · dict\n키 → 타입 객체 · 절대 만료 시각 · LRU"]
+            V["String · 연결 List · 해시 Set/Hash\nSorted Set = 멤버 해시 + skiplist"]
+            T["lazy/active expiry\n후보 5개 근사 LRU"]
+            E -->|소켓 콜백| N
+            N -->|해석된 요청| M
+            M -->|RESP 결과| N
+            M <--> D
+            D --> V
+            M --> L
+            L -->|허용 명령만 · 인터리빙 없음| M
+            E -->|주기 작업| T
+            T --> D
+        end
+        B["RDB 저장 자식 프로세스"]
+        E -->|60초 주기 fork| B
+        D -->|fork 시점 키·값·만료 시각| B
+    end
+    R["RDB 스냅샷 · 최대 24시간 보관"]
+    C <-->|TCP · RESP 요청/응답| N
+    B -->|임시 파일 fsync 후 rename| R
+    R -->|시작 시 만료되지 않은 키 복구| D
+    subgraph EX["서버 외부 · 테스트용 클라이언트"]
+        CA["Cache-aside\nmiss 시 적재 · 쓰기 후 갱신/무효화"]
+        WB["Write-back\n캐시 우선 반영 · 메모리 대기열"]
+        W["백그라운드 flush\n성공만 제거 · 실패 재시도\n정상 종료 deadline · 비정상 종료 유실 허용"]
+        WB --> W
+    end
+    O["Mock 원본 저장소"]
+    CA <--> C
+    CA <--> O
+    WB <--> C
+    W --> O

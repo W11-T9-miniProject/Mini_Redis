@@ -1,0 +1,2 @@
+WARNING: Could not fetch server CONFIG
+ SET bench smoke EX 300: rps=0.0 (overall: 0.0) avg_msec=0.000 (overall: 0.000)                                                                               SET bench smoke EX 300: 1639344.25 requests per second, p50=0.463 msec

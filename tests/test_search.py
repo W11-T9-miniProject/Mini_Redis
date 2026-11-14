@@ -12,7 +12,7 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "examples"))
-from search_app import SearchService, SearchHttpServer, handler_for, initials, normalize
+from search_app import SearchService, SearchHttpServer, handler_for, initials, match_key, normalize
 
 
 class Cache:
@@ -62,6 +62,48 @@ class SearchTests(unittest.TestCase):
         after = self.service.suggest("  성수   카페 ")
         self.assertEqual(before[0], after[0])
         self.assertEqual(after[1], "HIT")
+
+    def test_spacing_and_district_aliases_share_candidates_and_cache(self):
+        variants = ("성수 카페", "성수카페", "성수동카페", "성수동 카페", "성수 동 카페")
+        expected, source = self.service.suggest(variants[0])
+        self.assertEqual(source, "MISS")
+        self.assertTrue(any(item["text"] == "성수 카페" for item in expected))
+        for query in variants[1:]:
+            with self.subTest(query=query):
+                self.assertEqual(self.service.suggest(query), (expected, "HIT"))
+                self.assertEqual(self.service.key(query), self.service.key(variants[0]))
+        self.assertEqual(self.service.stats["db_reads"], 1)
+        for query, expected_text in (("성수동카", "성수 카페"), ("연남동카페", "연남 카페"),
+                                     ("한남동카페", "한남 카페"), ("성수동서점", "성수 서점")):
+            with self.subTest(query=query):
+                values, _ = self.service.suggest(query)
+                self.assertIn(expected_text, [item["text"] for item in values])
+        self.assertEqual(match_key("동네 카페"), "동네카페")
+        self.assertEqual(match_key("동대문"), "동대문")
+
+    def test_result_search_uses_same_alias_rules(self):
+        expected = self.service.search("성수 카페")
+        self.assertTrue(expected)
+        for query in ("성수동카페", "성수카페", "성수동 카페", "카페 성수동"):
+            with self.subTest(query=query):
+                self.assertEqual(self.service.search(query), expected)
+        self.assertTrue(self.service.search("연남동카페"))
+        self.assertTrue(self.service.search("성수동서점", category="books"))
+        self.assertTrue(self.service.search("ㅅㅅㅋㅍ"))
+
+    def test_searching_unknown_text_does_not_create_suggestions(self):
+        # 개인 기록을 서버 추천 학습으로 착각하지 않도록 서버 동작도 고정한다.
+        self.assertEqual(self.service.search("처음보는성수동카페123"), [])
+        self.assertEqual(self.service.suggest("처음보는성수동카페")[0], [])
+        with self.service.database() as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM search_events").fetchone()[0], 3000)
+
+    def test_old_seed_version_rebuilds_matching_index(self):
+        with self.service.database() as db:
+            db.execute("UPDATE meta SET version='teum:suggest:v2:old'")
+            db.execute("UPDATE phrases SET normalized=text")
+        rebuilt = SearchService(self.service.db_path, Cache(), event_count=3000)
+        self.assertIn("성수 카페", [item["text"] for item in rebuilt.suggest("성수동카페")[0]])
 
     def test_sql_wildcards_and_query_limit(self):
         for query in ("%", "_", "' OR 1=1 --", "\\"):
@@ -164,6 +206,19 @@ class SearchHttpTests(unittest.TestCase):
         self.assertEqual(first[2], second[2])
         self.assertEqual(self.get("/api/suggest?" + urlencode({"q":"가" * 81}))[0], 400)
         self.assertEqual(self.get("/api/suggest?q=%25")[0], 200)
+
+    def test_compound_alias_query_over_http(self):
+        normal_path = "/api/suggest?" + urlencode({"q": "성수 카페"})
+        alias_path = "/api/suggest?" + urlencode({"q": "성수동카페"})
+        normal = self.get(normal_path)
+        alias = self.get(alias_path)
+        self.assertEqual(alias[0], 200)
+        self.assertEqual(alias[1]["X-Cache"], "HIT")
+        self.assertEqual(normal[2], alias[2])
+        self.assertIn("성수 카페", [item["text"] for item in json.loads(alias[2])["suggestions"]])
+        result = self.get("/api/search?" + urlencode({"q": "성수동카페"}))
+        self.assertEqual(result[0], 200)
+        self.assertGreater(json.loads(result[2])["total"], 0)
 
     def test_filter_and_saved_routes(self):
         config = json.loads(self.get("/api/config")[2])

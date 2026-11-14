@@ -55,9 +55,18 @@ function renderSuggestions(values, query) {
   suggestions = values;
   activeOption = -1;
   const isRecent = !query && recent.length > 0;
-  $('#suggest-title').textContent = query ? '이런 곳을 찾고 있나요?' : isRecent ? '최근 검색과 새로운 발견' : '가볍게 시작해 보세요';
+  $('#suggest-title').textContent = query ? '추천 검색어' : '검색어를 선택하거나 입력해 보세요';
   $('#clear-recent').hidden = !isRecent;
-  list.innerHTML = values.length ? values.map((value, index) => `<li class="suggest-option" id="suggest-${index}" role="option" aria-selected="false" data-index="${index}"><span class="suggest-symbol" aria-hidden="true">${value.recent ? '◷' : '⌕'}</span><span class="suggest-text">${highlighted(value.text, query)}</span><span class="suggest-kind">${escapeHtml(value.recent ? '최근 검색' : value.kind)}</span><span class="suggest-arrow" aria-hidden="true">↖</span></li>`).join('') : '<li class="suggest-empty" role="presentation">일치하는 추천어가 없어요. 입력한 검색어로 찾아볼까요?</li>';
+  // 빈 검색창의 개인 기록과 서버 추천을 별도 그룹으로 보여준다.
+  // 글자를 입력하면 fetchSuggestions는 서버 후보만 넘기므로 개인 기록이 섞이지 않는다.
+  let previousGroup = null;
+  list.innerHTML = values.length ? values.map((value, index) => {
+    const group = value.recent ? '최근 검색' : '추천 검색어';
+    const heading = !query && previousGroup !== group
+      ? `<li class="suggest-group" role="presentation">${group}</li>` : '';
+    previousGroup = group;
+    return heading + `<li class="suggest-option" id="suggest-${index}" role="option" aria-selected="false" data-index="${index}"><span class="suggest-symbol" aria-hidden="true">${value.recent ? '◷' : '⌕'}</span><span class="suggest-text">${highlighted(value.text, query)}</span><span class="suggest-kind">${escapeHtml(value.recent ? '최근 검색' : value.kind)}</span><span class="suggest-arrow" aria-hidden="true">↖</span></li>`;
+  }).join('') : '<li class="suggest-empty" role="presentation">일치하는 추천어가 없어요. 입력한 검색어로 찾아볼까요?</li>';
   panel.hidden = false;
   input.setAttribute('aria-expanded', 'true');
   input.removeAttribute('aria-activedescendant');
@@ -74,7 +83,8 @@ async function fetchSuggestions() {
     if (version !== suggestionVersion || document.activeElement !== input || composing) return;
     let values = data.suggestions;
     if (!query && recent.length) {
-      values = [...recent.map(text => ({text, kind:'최근 검색', recent:true})), ...values.filter(item => !recent.includes(item.text))].slice(0, 8);
+      // 같은 글자여도 기록과 추천은 의미가 다르다. 추천 그룹을 기록 때문에 숨기지 않는다.
+      values = [...recent.map(text => ({text, kind:'최근 검색', recent:true})), ...values];
     }
     renderSuggestions(values, query);
   } catch (error) {

@@ -26,11 +26,42 @@ from search_data import CATEGORIES, PLACES, STARTERS
 ROOT = Path(__file__).resolve().parents[1]
 WEB_ROOT = ROOT / "web" / "teum"
 INITIALS = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"
+DISTRICT_ALIASES = {"성수동": "성수", "연남동": "연남", "한남동": "한남", "연희동": "연희"}
 
 
 def normalize(text):
     """같은 검색어가 대소문자/유니코드 조합 차이로 다른 캐시 키가 되지 않게 한다."""
     return " ".join(unicodedata.normalize("NFKC", text).casefold().split())
+
+
+def match_key(text):
+    """화면의 표기는 보존하고 검색/캐시 비교에만 쓰는 형태를 만든다.
+
+    '성수동카페', '성수 카페', '성수카페' → '성수카페'.
+    아무 글자의 '동'을 지우지 않고 지원하는 동네 이름만 별칭 처리한다.
+    자동완성과 최종 검색이 이 함수를 공유해야 추천을 선택한 뒤 결과가 사라지지 않는다.
+    """
+    value = normalize(text).replace(" ", "")
+    for alias, district in DISTRICT_ALIASES.items():
+        value = value.replace(alias, district)
+    return value
+
+
+def search_tokens(text):
+    """붙여 쓴 '성수카페'도 ['성수', '카페']로 나눠 띄어쓰기와 결과를 일치시킨다.
+
+    단순 공백 제거만 하면 '성수 카페'는 북카페도 찾지만 '성수카페'는 놓칠 수 있다.
+    등록된 동네가 앞/뒤에 있을 때 같은 토큰으로 검색하고, 그 외에는 입력 공백을 쓴다.
+    """
+    compact = match_key(text)
+    districts = sorted({place["district"] for place in PLACES}, key=len, reverse=True)
+    for district in districts:
+        if len(compact) > len(district):
+            if compact.startswith(district):
+                return [district, compact[len(district):]]
+            if compact.endswith(district):
+                return [compact[:-len(district)], district]
+    return [match_key(part) for part in normalize(text).split()]
 
 
 def initials(text):
@@ -50,7 +81,8 @@ class SearchService:
         # 고정 개수의 lock stripe라 검색어가 늘어도 lock 메모리가 무한히 늘지 않는다.
         self.prefix_locks = [threading.Lock() for _ in range(64)]
         corpus = json.dumps(PLACES, ensure_ascii=False, sort_keys=True).encode()
-        self.namespace = "teum:suggest:v2:" + hashlib.sha256(corpus).hexdigest()[:10] + ":"
+        # 매칭 규칙 변경 전의 빈 결과/후보를 재사용하지 않도록 버전도 바꾼다.
+        self.namespace = "teum:suggest:v3:" + hashlib.sha256(corpus).hexdigest()[:10] + ":"
         self.seed(event_count)
 
     @contextmanager
@@ -103,7 +135,7 @@ class SearchService:
                     phrases[category["label"]] = "종류"
             for text, kind in phrases.items():
                 db.execute("INSERT INTO phrases(text,normalized,initials,kind) VALUES(?,?,?,?)",
-                           (text, normalize(text), initials(text), kind))
+                           (text, match_key(text), initials(match_key(text)), kind))
             ids = [row[0] for row in db.execute("SELECT id FROM phrases ORDER BY id")]
             rng = random.Random(42)
             # sleep으로 지연을 꾸미지 않는다. 합성 검색 이력에서 실제 GROUP BY를 수행한다.
@@ -112,7 +144,7 @@ class SearchService:
             db.execute("INSERT INTO meta(version) VALUES(?)", (self.namespace,))
 
     def key(self, query):
-        return self.namespace + hashlib.sha256(query.encode()).hexdigest()
+        return self.namespace + hashlib.sha256(match_key(query).encode()).hexdigest()
 
     def _from_cache(self, key):
         raw = self.client.get(key)
@@ -143,9 +175,10 @@ class SearchService:
         return [{"text": row[0], "kind": row[1]} for row in rows]
 
     def suggest(self, raw_query):
-        query = normalize(raw_query)
-        if len(query) > 80:
+        normalized = normalize(raw_query)
+        if len(normalized) > 80:
             raise ValueError("검색어는 80자 이내로 입력해 주세요.")
+        query = match_key(normalized)
         if not query:
             return [{"text": text, "kind": "키워드"} for text in STARTERS], "BYPASS"
         if not self.cache_enabled:
@@ -184,6 +217,8 @@ class SearchService:
             raise ValueError("검색어는 80자 이내로 입력해 주세요.")
         if category not in {item["id"] for item in CATEGORIES}:
             raise ValueError("알 수 없는 카테고리입니다.")
+        compact_query = match_key(query)
+        tokens = search_tokens(query)
         results = []
         for place in PLACES:
             if category != "all" and place["category"] != category:
@@ -192,10 +227,11 @@ class SearchService:
                 continue
             if saved is not None and place["id"] not in saved:
                 continue
-            haystack = normalize(" ".join([place["name"], place["district"], place["category_label"], *place["tags"]]))
-            if query and query not in haystack and query not in initials(haystack):
-                # '성수 카페' 같은 다중 단어는 입력 순서에 관계없이 모두 일치시킨다.
-                if not all(part in haystack for part in query.split()):
+            haystack = match_key(" ".join([place["name"], place["district"], place["category_label"], *place["tags"]]))
+            initial_haystack = initials(haystack)
+            if compact_query and compact_query not in haystack and compact_query not in initial_haystack:
+                # 띄어쓴 여러 단어는 순서를 바꿔도 검색한다. '카페 성수동'도 처리한다.
+                if not all(part in haystack or part in initial_haystack for part in tokens):
                     continue
             results.append(place)
         if sort == "name":

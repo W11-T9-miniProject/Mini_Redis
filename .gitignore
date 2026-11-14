@@ -1,0 +1,13 @@
+/build/
+__pycache__/
+*.py[cod]
+*.db
+*.db-shm
+*.db-wal
+*.aof
+.env
+.vscode/
+benchmark-results*.json
+*.obj
+*.pdb
+*.ilk

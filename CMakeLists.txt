@@ -1,0 +1,27 @@
+cmake_minimum_required(VERSION 3.16)
+project(mini_redis C)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+if(MSVC)
+    add_compile_options(/utf-8 /W4)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+add_library(mini_redis_core
+    src/common.c src/hash_table.c src/store.c src/resp.c src/command.c)
+target_include_directories(mini_redis_core PUBLIC include)
+add_executable(mini-redis src/main.c src/server.c)
+target_link_libraries(mini-redis PRIVATE mini_redis_core)
+if(WIN32)
+    target_link_libraries(mini-redis PRIVATE ws2_32)
+endif()
+add_executable(unit-tests
+    tests/test_main.c tests/test_hash_table.c tests/test_store.c
+    tests/test_resp.c tests/test_command.c)
+target_link_libraries(unit-tests PRIVATE mini_redis_core)
+enable_testing()
+foreach(stage hash store resp command)
+    add_test(NAME ${stage} COMMAND unit-tests ${stage})
+endforeach()

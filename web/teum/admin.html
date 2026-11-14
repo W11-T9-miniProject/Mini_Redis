@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8f4">
+  <title>추천 검색어 관리 — 틈</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/admin.css">
+  <script src="/admin.js" defer></script>
+</head>
+<body>
+  <div class="admin-shell">
+    <header class="admin-header"><a class="brand" href="/admin" aria-label="틈 관리 홈"><span class="brand-symbol" aria-hidden="true">✳</span><span class="brand-name">틈.</span><span class="admin-brand-caption">관리</span></a><a class="back-to-search" href="/" target="_blank" rel="noopener">검색 화면 열기 <span aria-hidden="true">↗</span></a></header>
+    <main>
+      <section class="admin-intro"><p class="eyebrow">WORDS THAT LEAD TO PLACES</p><h1>다음 발견의<br><span>시작을 다듬어요.</span></h1><p>검색창에 제안할 단어를 추가하고, 변경하고, 정리하세요.</p></section>
+      <div class="admin-layout">
+        <section class="catalog-panel" aria-labelledby="catalog-title">
+          <div class="panel-heading"><div><h2 id="catalog-title">추천 검색어 <span id="admin-total">—</span></h2><p>입력한 글자와 맞는 검색어가 검색창에 표시됩니다.</p></div><button type="button" id="reload-catalog" class="quiet-button">새로고침 ↻</button></div>
+          <form id="admin-filter" class="admin-filter" role="search"><label class="sr-only" for="admin-filter-input">관리할 검색어 찾기</label><input id="admin-filter-input" type="search" maxlength="80" placeholder="검색어를 찾아보세요"><button type="submit">찾기</button></form>
+          <p id="catalog-status" class="catalog-status" role="status" aria-live="polite">목록을 불러오고 있어요.</p>
+          <div class="catalog-scroll"><table class="catalog-table"><thead><tr><th scope="col">검색어</th><th scope="col">분류</th><th scope="col"><span class="sr-only">작업</span></th></tr></thead><tbody id="catalog-rows"></tbody></table></div>
+          <div class="catalog-pagination"><span id="catalog-page">—</span><div><button type="button" id="previous-page" aria-label="이전 페이지">←</button><button type="button" id="next-page" aria-label="다음 페이지">→</button></div></div>
+        </section>
+        <aside class="editor-panel" aria-labelledby="editor-heading">
+          <div class="editor-icon" aria-hidden="true">✦</div><p class="eyebrow">MAKE A LITTLE CHANGE</p><h2 id="editor-heading">새 검색어 추가</h2><p class="editor-description" id="editor-description">장소 정보는 유지하고 검색창의 추천어를 관리합니다.</p>
+          <form id="phrase-form"><label for="phrase-text">검색어</label><input id="phrase-text" name="text" required maxlength="80" placeholder="예: 성수 커피"><label for="phrase-kind">분류</label><input id="phrase-kind" name="kind" required maxlength="20" value="키워드" list="phrase-kinds"><datalist id="phrase-kinds"><option value="키워드"><option value="카페"><option value="서점"><option value="산책"><option value="전시·문화"><option value="머무는 공간"></datalist><p class="field-hint">분류는 추천 검색어 옆에 함께 표시됩니다.</p><p id="editor-error" class="editor-error" role="alert" hidden></p><button id="save-phrase" type="submit" class="primary-button">검색어 추가하기 <span aria-hidden="true">＋</span></button><button type="button" id="cancel-edit" class="cancel-edit" hidden>수정 취소</button></form>
+          <div class="editor-note"><span aria-hidden="true">↗</span><p>저장한 변경 사항은<br>다음 검색부터 반영됩니다.</p></div>
+        </aside>
+      </div>
+      <section class="change-receipt" id="change-receipt" role="status" aria-live="polite" hidden><span class="receipt-icon" aria-hidden="true">✓</span><div><strong id="receipt-title"></strong><p id="receipt-description"></p></div><span class="receipt-time" id="receipt-time"></span></section>
+    </main>
+    <footer class="admin-footer"><span>일상과 발견 사이, 당신만의 틈.</span><span>TEUM · COLLECTION MANAGER</span></footer>
+  </div>
+  <dialog id="delete-dialog" class="delete-dialog" aria-labelledby="delete-title"><form method="dialog"><span class="delete-symbol" aria-hidden="true">−</span><h2 id="delete-title">이 검색어를 삭제할까요?</h2><p id="delete-name"></p><p class="delete-description">삭제하면 자동완성 추천에서 제외됩니다.</p><div class="delete-actions"><button value="cancel">취소</button><button type="button" id="confirm-delete">삭제하기</button></div><p id="delete-error" class="editor-error" role="alert" hidden></p></form></dialog>
+</body>
+</html>

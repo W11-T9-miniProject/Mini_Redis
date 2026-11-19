@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="390" viewBox="0 0 1200 390" role="img" aria-labelledby="title desc">
+<title id="title">여러 클라이언트가 같은 인메모리 키·값 저장소를 사용한다</title><desc id="desc">자리와 식단 웹의 요청이 직접 만든 C 미니 Redis의 RAM 해시 테이블에 전달된다. 키와 값을 공유하고 변경 로그로 재시작 복원을 돕는다.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#547065"/></marker></defs>
+<rect width="1200" height="390" rx="14" fill="#f6f8f5"/>
+<g font-family="Malgun Gothic,Apple SD Gothic Neo,Noto Sans CJK KR,sans-serif" fill="#18382d">
+<text x="42" y="53" font-size="32" font-weight="700">여러 화면이 함께 쓰는, 하나의 빠른 저장소</text>
+<text x="42" y="93" font-size="23" fill="#4c665b">직접 구현한 핵심: RAM의 해시 테이블 + 키·값 저장·조회·삭제</text>
+<rect x="42" y="135" width="238" height="65" rx="9" fill="#fff" stroke="#c2cec5"/><text x="65" y="177" font-size="26">자리 선점 화면</text>
+<rect x="42" y="223" width="238" height="65" rx="9" fill="#fff" stroke="#c2cec5"/><text x="65" y="265" font-size="26">식단 조회 화면</text>
+<path d="M292 166 H397 M292 255 H397" stroke="#547065" stroke-width="3" marker-end="url(#arrow)"/><text x="308" y="213" font-size="23">웹 · HTTP</text>
+<rect x="417" y="125" width="380" height="176" rx="10" fill="#e3f1e9" stroke="#81aa94"/>
+<text x="444" y="167" font-size="29" font-weight="700">C Mini Redis · RAM</text><text x="444" y="212" font-size="25">자리 키 → 선점 식별값</text><text x="444" y="255" font-size="25">식단 키 → 저장된 응답</text>
+<path d="M810 212 H875" stroke="#547065" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="895" y="140" width="263" height="144" rx="10" fill="#fff" stroke="#c2cec5"/>
+<text x="920" y="185" font-size="27" font-weight="700">공통 상태·응답</text><text x="920" y="229" font-size="24">여러 기기에서 사용</text><text x="920" y="265" font-size="23">저장소는 키·값 관리</text>
+<text x="42" y="350" font-size="23" fill="#4c665b">해시 충돌은 체이닝으로 처리 · 변경 로그는 디스크에 남겨 재시작 때 복원</text>
+</g></svg>

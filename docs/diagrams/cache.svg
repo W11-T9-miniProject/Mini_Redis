@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="415" viewBox="0 0 1200 415" role="img" aria-labelledby="title desc">
+<title id="title">식단 응답의 캐시 MISS와 HIT 경로</title><desc id="desc">MISS는 카카오 원본에서 가져온 응답을 메모리에 저장한다. HIT는 유효한 저장 응답을 재사용한다. 캐시 값은 제목과 이미지 주소 등의 데이터이며 이미지 파일 자체를 저장하는 것은 아니다.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#547065"/></marker></defs>
+<rect width="1200" height="415" rx="14" fill="#f6f8f5"/>
+<g font-family="Malgun Gothic,Apple SD Gothic Neo,Noto Sans CJK KR,sans-serif" fill="#18382d">
+<text x="42" y="53" font-size="32" font-weight="700">같은 식단을 매번 원본에서 가져와야 할까?</text>
+<text x="42" y="96" font-size="25" font-weight="700">처음 · MISS: 원본에서 가져와 저장</text>
+<rect x="42" y="119" width="255" height="72" rx="9" fill="#fff" stroke="#c2cec5"/><text x="67" y="165" font-size="26">웹의 식단 요청</text>
+<path d="M310 155 H388" stroke="#547065" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="408" y="119" width="275" height="72" rx="9" fill="#fff" stroke="#c2cec5"/><text x="433" y="165" font-size="26">카카오 원본 조회</text>
+<path d="M696 155 H775" stroke="#547065" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="795" y="119" width="363" height="72" rx="9" fill="#e3f1e9" stroke="#81aa94"/><text x="820" y="165" font-size="26">응답을 RAM에 저장 · 반환</text>
+<text x="42" y="247" font-size="25" font-weight="700">다음 · HIT: 유효한 저장 응답을 재사용</text>
+<rect x="42" y="270" width="255" height="72" rx="9" fill="#fff" stroke="#c2cec5"/><text x="67" y="316" font-size="26">웹의 식단 요청</text>
+<path d="M310 306 H388" stroke="#547065" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="408" y="270" width="275" height="72" rx="9" fill="#e3f1e9" stroke="#81aa94"/><text x="433" y="316" font-size="26">Mini Redis 응답</text>
+<path d="M696 306 H775" stroke="#547065" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="795" y="270" width="363" height="72" rx="9" fill="#fff" stroke="#c2cec5"/><text x="820" y="316" font-size="26">원본 재요청 없이 반환</text>
+<text x="42" y="390" font-size="22" fill="#4c665b">공통 캐시 · 최초 저장부터 10분 · HIT로 기한 연장 없음 · 제목·이미지 주소 응답을 저장</text>
+</g></svg>

@@ -34,17 +34,6 @@ function render() {
   $('held-count').textContent=state.seats.filter(s=>s.status==='held').length;
   $('join-form').hidden=!!participant&&!editing; $('profile').hidden=!participant||editing;
   if(participant) { $('profile-name').textContent=participant.full_name; $('profile-number').textContent=participant.student_no+'번 교육생'; $('edit-profile').disabled=!!mine; }
-  $('focus-seats').replaceChildren();
-  for(const seat of state.seats.filter(s=>s.id==='left-open'||s.id==='right-open')) {
-    const card=element('article',undefined,'focus-card '+seat.status+(seat.is_mine?' is-mine':''));
-    const top=element('div',undefined,'focus-heading');top.append(element('h2',seat.label),element('span',labels[seat.status],'focus-status'));card.append(top);
-    card.append(element('p',seat.status==='available'?'선택할 수 있습니다':seat.full_name,'focus-name'));
-    if(seat.student_no)card.append(element('p',seat.student_no+'번 교육생'+(seat.is_mine?' · 이 브라우저에서 선점':''),'focus-number'));
-    if(seat.status==='held'){const timer=element('div',undefined,'focus-timer');timer.dataset.deadline=seat.expires_at_ms;card.append(timer);}
-    else if(seat.expires_at_ms)card.append(element('p',timeText(seat.expires_at_ms)+'까지 유효','focus-number'));
-    if(seat.status==='available'){const choose=element('button',participant?'이 자리 선점':'참여 정보 입력 후 선택');choose.disabled=!participant||editing||!!mine||busy||!online;choose.onclick=()=>claim(seat);card.append(choose);}
-    $('focus-seats').append(card);
-  }
   for(const seat of state.seats) {
     let button=buttons.get(seat.id);
     if(!button) {
@@ -104,6 +93,19 @@ function render() {
       if([...restore.options].some(o=>o.value===restorePrevious))restore.value=restorePrevious;
       restore.disabled=!restorable.length||busy;
       $('admin-restore').disabled=!restorable.length||busy||!online;
+      const release=$('release-number'), releasePrevious=release.value;
+      const registrations=state.registrations||[];
+      release.replaceChildren();
+      for(const person of registrations){
+        const status=person.seat_label?person.seat_label+' '+labels[person.seat_status]+' · 자리 취소 필요':'자리 없음 · 초기화 가능';
+        const option=element('option',person.student_no+'번 · '+person.full_name+' · '+status);
+        option.value=String(person.student_no);option.disabled=!!person.seat_label;release.append(option);
+      }
+      if(!registrations.length){const empty=element('option','등록된 교육생이 없습니다.');empty.value='';release.append(empty);}
+      if([...release.options].some(o=>o.value===releasePrevious&&!o.disabled))release.value=releasePrevious;
+      const releasable=registrations.some(p=>!p.seat_label);
+      release.disabled=busy||!registrations.length;
+      $('admin-release').disabled=busy||!online||!releasable;
       if(document.activeElement!==$('reset-at')&&!$('reset-at').value) setDate(state.settings.reset_at_ms);
       if(document.activeElement!==$('public-url')&&!$('public-url').dataset.edited) $('public-url').value=state.settings.public_url||'';
     }
@@ -114,7 +116,6 @@ function render() {
   tick();
 }
 function tick() {
-  document.querySelectorAll('.focus-timer').forEach(timer=>{timer.textContent=Math.max(0,Math.ceil((Number(timer.dataset.deadline)-Date.now()-skew)/1000))+'초 남음';});
   const mine=mySeat(), countdown=document.querySelector('.countdown');
   if(!mine||mine.status!=='held'||!countdown) return;
   const remaining=Math.max(0,Math.ceil((mine.expires_at_ms-Date.now()-skew)/1000));
@@ -137,6 +138,6 @@ if(adminPage) {
   $('settings-form').onsubmit=async event=>{event.preventDefault();const data={reset_at_ms:new Date($('reset-at').value).getTime(),public_url:$('public-url').value.trim()};await action('/api/admin/settings',data,'이후 확정에 적용할 시연 설정을 저장했습니다.');delete $('public-url').dataset.edited;};
   $('admin-cancel-form').onsubmit=event=>{event.preventDefault();if($('admin-seat').value)action('/api/admin/cancel',{seat_id:$('admin-seat').value},'선택한 자리의 배정을 취소했습니다.');};
   $('admin-restore-form').onsubmit=event=>{event.preventDefault();if($('restore-seat').value)action('/api/admin/restore',{seat_id:$('restore-seat').value},'기존 배정으로 되돌렸습니다.');};
-  $('admin-release-form').onsubmit=event=>{event.preventDefault();action('/api/admin/release',{student_no:Number($('release-number').value)},'번호 등록을 초기화했습니다. 새 기기에서 다시 참여할 수 있습니다.');};
+  $('admin-release-form').onsubmit=event=>{event.preventDefault();if($('release-number').value)action('/api/admin/release',{student_no:Number($('release-number').value)},'번호 등록을 초기화했습니다. 새 기기에서 다시 참여할 수 있습니다.');};
 }
 refresh();setInterval(()=>{if(!busy)refresh();},2000);setInterval(tick,200);

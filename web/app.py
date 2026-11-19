@@ -94,6 +94,7 @@ class SeatService:
         self.prefix = prefix
         self.locks = {}
         self.locks_guard = threading.Lock()
+        self.registration_index_lock = threading.Lock()
 
     def seat_key(self, seat):
         if not isinstance(seat, str) or seat not in SEAT_IDS:
@@ -125,6 +126,13 @@ class SeatService:
                 return
             if self.find_mine(number):
                 raise AppError("기존 테스트 배정이 남아 있습니다. 관리자가 해당 배정을 취소한 뒤 다시 참여해 주세요.", 409)
+            # Index first: failed joins may leave an unused number, never an undiscoverable registration.
+            with self.registration_index_lock:
+                index_key = self.prefix + ":registration-index"
+                index = self.store.get(index_key) or {"numbers": []}
+                if number not in index["numbers"]:
+                    index["numbers"].append(number)
+                    self.store.put(index_key, index)
             code, _ = self.store.put(key, {"full_name": name, "owner": self.owner(token)}, nx=True)
             if code != 200:
                 raise AppError("이미 등록된 교육생 번호입니다.", 409)
@@ -154,6 +162,20 @@ class SeatService:
             raise AppError("시연 설정을 찾을 수 없습니다.", 503)
         return value
 
+    def registrations(self, seats):
+        index = self.store.get(self.prefix + ":registration-index") or {"numbers": []}
+        occupied = {s["student_no"]: s for s in seats if s.get("student_no") is not None}
+        result = []
+        for number in sorted(index["numbers"]):
+            record = self.store.get(self.registration_key(number))
+            if record is None:
+                continue
+            seat = occupied.get(number)
+            result.append({"student_no": number, "full_name": record["full_name"],
+                           "seat_label": seat["label"] if seat else None,
+                           "seat_status": seat["status"] if seat else None})
+        return result
+
     def prepare(self):
         # Do not silently hide a user's reservation when loading an older layout.
         for seat in SEATS:
@@ -161,7 +183,12 @@ class SeatService:
                 legacy = self.store.get(self.prefix + ":seat:" + seat["id"])
                 if legacy and not (legacy.get("fixed") and legacy.get("owner") == "preset"):
                     raise AppError("공석으로 바꿀 자리에 기존 예약이 남아 있습니다. 이전 배치에서 취소한 뒤 다시 실행해 주세요.", 409)
-        if self.store.get(self.prefix + ":prepared"):
+        prepared = self.store.get(self.prefix + ":prepared")
+        if self.store.get(self.prefix + ":registration-index") is None:
+            # One-time upgrade for registrations created before the discovery index existed.
+            numbers = [n for n in range(1, 10000) if self.store.get(self.registration_key(n))] if prepared else []
+            self.store.put(self.prefix + ":registration-index", {"numbers": numbers}, nx=True)
+        if prepared:
             return
         self.store.put(self.prefix + ":settings", {"reset_at_ms": now_ms() + 86400000,
                                                    "public_url": ""}, nx=True)
@@ -249,7 +276,7 @@ class SeatService:
 
 
 def create_app(service, secret, admin_key, menu_service=None):
-    from .menu import MenuService
+    from .menu import MenuService, TTL_SECONDS
     menu_service = menu_service or MenuService(service.store, service.prefix + ":cache:menu:114707701")
     app = Flask(__name__)
     app.secret_key = secret
@@ -343,11 +370,13 @@ def create_app(service, secret, admin_key, menu_service=None):
         result = service.state(identity[0], identity[2]) if identity else service.state()
         result["participant"] = {"student_no": identity[0], "full_name": identity[1]} if identity else None
         result["admin"] = bool(session.get("admin"))
+        if result["admin"]:
+            result["registrations"] = service.registrations(result["seats"])
         return jsonify(result)
 
     @app.get("/menu")
     def menu_page():
-        return render_template("menu.html", admin=bool(session.get("admin")))
+        return render_template("menu.html", admin=bool(session.get("admin")), cache_minutes=TTL_SECONDS // 60)
 
     @app.get("/api/menu")
     def menu_get():
@@ -482,6 +511,10 @@ def create_app(service, secret, admin_key, menu_service=None):
             settings["public_url"] = url.rstrip("/")
         service.store.put(service.prefix + ":settings", settings)
         return jsonify(status="ok")
+
+    @app.get("/qr")
+    def qr_page():
+        return render_template("qr.html", public_url=service.settings().get("public_url"))
 
     @app.get("/qr.svg")
     def qr():

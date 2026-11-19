@@ -190,6 +190,48 @@ class WebTests(unittest.TestCase):
         self.assertEqual(second.post("/api/join", json={"student_no": 71, "full_name": "정승영"}).status_code, 200)
         self.assertEqual(second.post("/api/leave", json={}).status_code, 200)
 
+    def test_18_admin_registration_choices(self):
+        first = self.participant(71, "정승영")
+        self.participant(23, "민수")
+        public = self.app.test_client().get("/api/state").get_json()
+        self.assertNotIn("registrations", public)
+        admin = self.admin()
+        registrations = admin.get("/api/state").get_json()["registrations"]
+        self.assertEqual([r["student_no"] for r in registrations], [23, 71])
+        self.assertEqual(registrations[1], {"student_no": 71, "full_name": "정승영", "seat_label": None,
+                                          "seat_status": None})
+        first.post("/api/claim", json={"seat_id": "left-open"})
+        held = admin.get("/api/state").get_json()["registrations"][1]
+        self.assertEqual((held["seat_label"], held["seat_status"]), ("2팀-2", "held"))
+        self.assertEqual(admin.post("/api/admin/release", json={"student_no": 71}).status_code, 409)
+        admin.post("/api/admin/cancel", json={"seat_id": "left-open"})
+        self.assertEqual(admin.post("/api/admin/release", json={"student_no": 71}).status_code, 200)
+        self.assertEqual([r["student_no"] for r in admin.get("/api/state").get_json()["registrations"]], [23])
+        # Existing installations have registrations but no discovery catalog.
+        self.service.store.call({"op": "delete", "key": self.service.prefix + ":registration-index"})
+        self.service.prepare()
+        self.assertEqual([r["student_no"] for r in admin.get("/api/state").get_json()["registrations"]], [23])
+        self.assertIn('<select id="release-number"', admin.get("/admin").get_data(as_text=True))
+
+    def test_19_qr_participation_page(self):
+        client = self.app.test_client()
+        empty = client.get("/qr")
+        self.assertEqual(empty.status_code, 200)
+        self.assertIn("외부 접속 주소를 먼저 설정", empty.get_data(as_text=True))
+        self.assertNotIn('class="qr-display-image"', empty.get_data(as_text=True))
+        admin = self.admin()
+        url = "https://example.trycloudflare.com"
+        admin.post("/api/admin/settings", json={"public_url": url})
+        page = client.get("/qr")
+        self.assertEqual(page.status_code, 200)
+        text = page.get_data(as_text=True)
+        self.assertIn('class="qr-display-image"', text)
+        self.assertIn(url, text)
+        self.assertIn('href="/"', text)
+        self.assertEqual(client.get("/qr.svg").mimetype, "image/svg+xml")
+        for path in ("/", "/admin", "/menu"):
+            self.assertIn('href="/qr"', client.get(path).get_data(as_text=True))
+
     def test_12_legacy_cookies_cannot_own_existing_seat(self):
         legacy = self.app.test_client()
         with legacy.session_transaction() as identity:

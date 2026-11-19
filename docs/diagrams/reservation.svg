@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
+<title id="title">자리 선점에서 NX와 락으로 확인과 저장을 하나로 보호한다</title><desc id="desc">두 사람의 같은 자리 요청이 들어와도 NX 조건 확인과 저장을 같은 락 안에서 처리해 유효한 선점은 하나만 성공한다. 임시 선점은 20초 뒤 만료되며 다음 접근 때 정리된다. 관리자 취소는 별도의 명시적 무효화다.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#547065"/></marker></defs>
+<rect width="1200" height="440" rx="14" fill="#f6f8f5"/>
+<g font-family="Malgun Gothic,Apple SD Gothic Neo,Noto Sans CJK KR,sans-serif" fill="#18382d">
+<text x="42" y="53" font-size="32" font-weight="700">빈자리 확인과 저장 사이에, 다른 요청이 끼어들면?</text>
+<text x="42" y="94" font-size="23" fill="#4c665b">NX: 유효한 키가 없을 때만 저장 · 확인과 저장 전체를 같은 락으로 보호</text>
+<rect x="42" y="140" width="230" height="132" rx="10" fill="#fff" stroke="#c2cec5"/><text x="67" y="185" font-size="26">A도 같은 자리</text><text x="67" y="234" font-size="26">B도 같은 자리</text>
+<path d="M285 205 H368" stroke="#547065" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="388" y="140" width="389" height="132" rx="10" fill="#e3f1e9" stroke="#81aa94"/><text x="413" y="184" font-size="28" font-weight="700">락 안에서 하나의 연산</text><text x="413" y="232" font-size="26">키 확인 → 조건 판단 → 저장</text>
+<path d="M790 205 H872" stroke="#547065" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="892" y="140" width="266" height="132" rx="10" fill="#fff" stroke="#c2cec5"/><text x="916" y="185" font-size="28" font-weight="700">선점 성공 1명</text><text x="916" y="232" font-size="25">다른 요청: 조건 실패</text>
+<rect x="42" y="313" width="1116" height="67" rx="9" fill="#e3f1e9"/>
+<text x="67" y="356" font-size="26">임시 선점 → 20초 뒤 만료 → 다음 접근 시 정리 → 다시 선점 가능</text>
+<text x="42" y="418" font-size="22" fill="#4c665b">관리자 취소·캐시 비우기: 기한이 지나기 전에도 명시적으로 무효화</text>
+</g></svg>

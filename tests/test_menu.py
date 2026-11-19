@@ -1,4 +1,5 @@
 import concurrent.futures
+import time
 import unittest
 from tests.test_web import WebTests
 from web.app import create_app, AppError
@@ -29,7 +30,8 @@ class MenuTests(unittest.TestCase):
         self.assertEqual(first["cache"],"MISS")
         self.assertEqual(second["cache"],"HIT")
         self.assertEqual(first["expires_at_ms"],second["expires_at_ms"])
-        self.assertEqual(first["ttl_seconds"],3600)
+        self.assertEqual(first["ttl_seconds"],600)
+        self.assertEqual(first["expires_at_ms"] - first["fetched_at_ms"],600_000)
         restored=MenuService(self.service.store,self.menu.key,lambda:self.fail("warm cache refetched"))
         self.assertEqual(restored.get()["cache"],"HIT")
         self.assertEqual(self.calls,1)
@@ -41,6 +43,10 @@ class MenuTests(unittest.TestCase):
         self.assertEqual(self.admin().post("/api/admin/menu/clear",json={}).status_code,200)
         self.assertEqual(b.get("/api/menu").get_json()["cache"],"MISS")
         self.assertEqual(self.calls,3)
+        self.service.store.put(self.menu.key, {"menu": MENU, "fetched_at_ms": int(time.time() * 1000) - 601_000},
+                               ttl_ms=3_600_000)
+        self.assertEqual(a.get("/api/menu").get_json()["cache"],"MISS")
+        self.assertEqual(self.calls,4)
 
     def test_concurrent_fill_and_failure(self):
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as pool:

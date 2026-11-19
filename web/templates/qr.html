@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>QR 참여 · 정글 자리 선점</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="qr-view">
+<header class="topbar">
+  <a href="/" class="brand"><span class="brand-mark">J</span><span>JUNGLE</span></a>
+  <nav><a href="/qr" aria-current="page">QR 참여</a><a href="/">자리 선택</a><a href="/menu">주간 식단</a><a href="/admin">관리자</a></nav>
+</header>
+<main class="qr-display">
+  <div><p class="eyebrow">JUNGLE / 자리 선점</p><h1>QR로 참여해 주세요</h1></div>
+  {% if public_url %}
+  <img class="qr-display-image" src="/qr.svg?v={{ public_url|urlencode }}" alt="휴대폰 카메라로 스캔하면 자리 선점 페이지가 열립니다">
+  <a class="qr-display-url" href="{{ public_url }}" target="_blank" rel="noopener">{{ public_url }}</a>
+  <a class="qr-display-start" href="/">자리 선점 화면 열기 →</a>
+  {% else %}
+  <section class="panel"><p>관리자 화면에서 외부 접속 주소를 먼저 설정해 주세요.</p><a class="qr-display-start" href="/admin">관리자 화면 열기 →</a></section>
+  {% endif %}
+</main>
+</body>
+</html>

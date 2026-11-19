@@ -10,7 +10,7 @@
 <body data-admin="{{ 'true' if admin else 'false' }}">
 <header class="topbar">
   <a href="/" class="brand"><span class="brand-mark">J</span><span>JUNGLE <small>자리 선점</small></span></a>
-  <nav><span id="connection" class="connection">연결 확인 중</span><a href="/menu">주간 식단</a><a href="{{ '/' if admin else '/admin' }}">{{ '참여 화면' if admin else '관리자' }}</a></nav>
+  <nav><span id="connection" class="connection">연결 확인 중</span><a href="/qr">QR 참여</a><a href="/menu">주간 식단</a><a href="{{ '/' if admin else '/admin' }}">{{ '참여 화면' if admin else '관리자' }}</a></nav>
 </header>
 <main>
   <section class="intro">
@@ -36,7 +36,7 @@
     <div class="admin-recovery">
       <form id="admin-cancel-form"><label for="admin-seat">배정을 취소할 자리</label><select id="admin-seat"></select><button class="danger">선택한 자리 배정 취소</button></form>
       <form id="admin-restore-form"><label for="restore-seat">기존 배정으로 되돌릴 빈자리</label><select id="restore-seat"></select><small>시연용 2팀-2·11팀-1과 공석은 제외합니다.</small><button id="admin-restore">기존 배정으로 되돌리기</button></form>
-      <form id="admin-release-form"><label for="release-number">기기 변경·번호 등록 초기화</label><input id="release-number" type="number" min="1" max="9999" required placeholder="교육생 번호"><small>해당 번호의 자리부터 취소한 뒤 초기화해 주세요.</small><button class="secondary">번호 등록 초기화</button></form>
+      <form id="admin-release-form"><label for="release-number">기기 변경·번호 등록 초기화</label><select id="release-number" required></select><small>번호·이름·자리 상태를 확인하고 선택하세요. 선점·배정 중이면 해당 자리부터 취소해 주세요.</small><button id="admin-release" class="secondary">번호 등록 초기화</button></form>
     </div>
   </section>
   {% endif %}
@@ -49,19 +49,17 @@
     </form>
     <div id="profile" class="profile" hidden><span><b id="profile-name"></b><small id="profile-number"></small></span><button id="edit-profile" class="secondary">참여 정보 변경</button></div>
   </section>
-  <section id="focus-seats" class="focus-seats" aria-label="시연 자리 현황"></section>
   <div class="workspace">
     <section class="panel map-panel">
       <div class="section-heading"><h2>전체 자리 배치도</h2><span class="subtle">강의실 앞쪽 ↑</span></div>
       <div class="legend"><span><i class="dot available"></i>빈자리</span><span><i class="dot held"></i>임시 선점</span><span><i class="dot confirmed"></i>배정 완료</span><span><i class="dot mine"></i>내 자리</span><span><i class="dot vacant"></i>공석 · 선택 제외</span></div>
-      <div class="map-scroll" aria-label="강의실 전체 배치도, 자리 이름과 현황은 위쪽 카드에서도 확인할 수 있습니다">
+      <div class="map-scroll" aria-label="강의실 전체 배치도, 빈자리를 눌러 직접 선점할 수 있습니다">
         <div class="room" id="room">
-          <div class="whiteboard">화이트보드</div><div class="coach">코치님</div>
+          <div class="whiteboard">스크린</div><div class="coach">코치님</div>
           <div class="door left-door">출입문</div><div class="door right-door">출입문</div>
           <span class="zone z1">1–3팀 구역</span><span class="zone z2">4–5팀 구역</span><span class="zone z3">6–7팀 구역</span><span class="zone z4">8–9팀 구역</span><span class="zone z5">10–12팀 구역</span>
         </div>
       </div>
-      <p class="map-help">1~10팀은 3자리, 11·12팀은 2자리입니다. 배정을 취소하면 같은 자리 번호로 선택할 수 있습니다. 오른쪽 위 두 공석은 선택 대상에서 제외됩니다.</p>
     </section>
     <aside>
       <section class="panel my-panel"><p class="eyebrow">MY SEAT</p><h2>내 자리</h2><div id="my-seat"><p class="subtle">성명과 번호를 입력하고 빈자리를 선택해 주세요.</p></div></section>

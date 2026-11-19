@@ -11,7 +11,7 @@ from .errors import AppError
 POST_ID = 114707701
 SOURCE_URL = f"https://pf.kakao.com/_xhzNjn/contents/posts/{POST_ID}?post_only=true"
 ORIGIN_URL = f"https://pf.kakao.com/rocket-web/web/v2/profiles/_xhzNjn/posts/{POST_ID}"
-TTL_SECONDS = 3600
+TTL_SECONDS = 10 * 60
 
 
 def parse_menu(data):
@@ -68,7 +68,7 @@ class MenuService:
         start = time.perf_counter()
         with self.lock:
             entry = self.store.get(self.key) if use_cache else None
-            if entry is not None:
+            if entry is not None and entry["fetched_at_ms"] + TTL_SECONDS * 1000 > int(time.time() * 1000):
                 menu, fetched = entry["menu"], entry["fetched_at_ms"]
                 status = "HIT"
             else:
